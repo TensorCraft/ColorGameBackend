@@ -57,7 +57,7 @@
 <body>
     <div class="container">
         <h2>Admin Login</h2>
-        <form id="login-form">
+        <form id="login-form" method="post" action="/api/login">
             <label for="username">Username:</label>
             <input type="text" id="username" name="username">
 
@@ -67,21 +67,5 @@
             <button type="submit">Login</button>
         </form>
     </div>
-
-    <script>
-        document.getElementById("login-form").addEventListener("submit", function(event) {
-            event.preventDefault();
-            const username = document.getElementById("username").value;
-            const password = document.getElementById("password").value;
-
-            // Simple username and password validation
-            if (username === "admin" && password === "password") {
-                // Redirect to the admin page
-                window.location.href = "admin.html";
-            } else {
-                alert("Invalid username or password. Please try again.");
-            }
-        });
-    </script>
 </body>
 </html>

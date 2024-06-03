@@ -247,7 +247,7 @@
             <div class="center"><button id="rules_confirmation_button">I Understand</button></div>
         </div>
         <div class="content" id="sign_name" style="display: none;">
-            <h2>Hi, <b>Yuxiang Liu</b></h2>
+            <h2>Hi, <b id="username">Yuxiang Liu</b></h2>
             <h3>Before entering quizz, please <b>sign</b> your name below</h3>
             <p style="margin-bottom: 0;padding-bottom: 0;">
                 </pstyle>Once you finished signing, your invitation code will expire</p>
@@ -257,6 +257,11 @@
             </div>
             <div class="center">
                 <button id="done_sign_button">Done</button>
+            </div>
+        </div>
+        <div class="content" id="loader" style="display: none;">
+            <div class="center">
+                <div class="loading"></div>
             </div>
         </div>
         <div class="content" id="questions" style="display: none;">
@@ -298,8 +303,34 @@
     let mediaRecorder;
     const interference = true;
     var currentAudio = null;
-    let cnt;
+    var cnt = 0;
+    var invitationCode;
+    var invitationType;
+    var invitationName;
+    var question_startTime;
+    var question_stopTime;
+    var choices = [];
+    var questionList;
+
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+    function dataURItoBlob(dataURI) {
+        const byteString = atob(dataURI.split(',')[1]);
+        const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+
+        for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+        }
+
+        return new Blob([ab], { type: mimeString });
+    }
     function init_sign() {
+        document.getElementById("username").innerHTML = invitationName;
         const canvas = document.getElementById("signature");
         let context = canvas.getContext('2d');
 
@@ -333,18 +364,42 @@
 
         const saveButton = document.getElementById("done_sign_button");
 
-        saveButton.addEventListener("click", saveCanvas);
+        saveButton.onclick = saveCanvas;
 
         function saveCanvas() {
+            saveButton.onclick = function () { };
             const image = canvas.toDataURL("image/png");
-            const link = document.createElement("a");
-            link.download = "signature.png";
-            link.href = image;
-            link.click();
+            const blob = dataURItoBlob(image);
 
+            const formData = new FormData();
+            formData.append('signature', blob, 'signature.png');
             document.getElementById("sign_name").style.display = "none";
-            document.getElementById("questions").style.display = "block";
-            start_quizz();
+            document.getElementById("loader").style.display = "block";
+
+            fetch(`/api/submit_signature/${invitationCode}`, {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error(`Failed to submit signature: ${response.statusText}`);
+                }
+                return fetch(`/api/get_questions/${invitationCode}`, {
+                    method: 'GET',
+                });
+            }).then(response => {
+                if (response.status !== 200) {
+                    throw new Error('Failed to load questions');
+                }
+                return response.json();
+            }).then(data => {
+                document.getElementById("loader").style.display = "none";
+                document.getElementById("questions").style.display = "block";
+                questionList = data;
+                start_quizz();
+            }).catch(error => {
+                alert(error.message);
+                window.location.reload();
+            });
         }
     }
 
@@ -404,22 +459,37 @@
 
                 mediaRecorder.onstop = function () {
                     let blob = new Blob(chunks, { type: 'video/webm' });
-                    let url = URL.createObjectURL(blob);
-                    let a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    a.download = 'recording.webm';
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    recording = false;//window.location.href = "finished.html";
-                    cameraStream.getTracks().forEach(function (track) {
-                        track.stop();
+                    let file = new File([blob], 'recording.webm', { type: 'video/webm' });
+                    let formData = new FormData();
+                    formData.append('recording', file);
+
+                    let jsonData = JSON.stringify({ answers: choices });
+
+                    fetch(`/api/submit_answers/${invitationCode}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: jsonData
+                    }).then(response => {
+                        if (response.status !== 200) {
+                            throw new Error("Failed uploading answer");
+                        }
+                        return fetch(`/api/submit_recording/${invitationCode}`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                    }).then(response => {
+                        if (response.status !== 200) {
+                            throw new Error("Failed uploading recording");
+                        }
+                        window.location.href = "/finished";
+                    }).catch(error => {
+                        alert(error.message);
+                        window.location.reload();
                     });
-                    document.getElementById("questions").style.display = "none";
-                    document.getElementById("uploading_section").style.display = "block";
-                    setTimeout(() => { window.location.href = "finished.html" }, 3000);
                 };
+
 
                 mediaRecorder.onerror = function (event) {
                     alert("Screen Recording Error, Please contact Admin");
@@ -466,18 +536,15 @@
     }
 
     function start_quizz() {
+        cnt = 0;
         const next_button = document.getElementById("next_button");
         next_button.style.display = "none";
-        const questionList = [{ 'options': ['green', 'white', 'black', 'orange'], 'correct': 'green' }, { 'options': ['black', 'white', 'red', 'orange'], 'correct': 'black' }, { 'options': ['red', 'blue', 'green', 'black'], 'correct': 'green' }, { 'options': ['red', 'orange', 'purple', 'green'], 'correct': 'green' }, { 'options': ['black', 'white', 'blue', 'green'], 'correct': 'black' }, { 'options': ['red', 'blue', 'green', 'white'], 'correct': 'green' }, { 'options': ['yellow', 'red', 'orange', 'purple'], 'correct': 'yellow' }, { 'options': ['white', 'orange', 'purple', 'blue'], 'correct': 'white' }, { 'options': ['purple', 'black', 'green', 'white'], 'correct': 'green' }, { 'options': ['red', 'orange', 'black', 'yellow'], 'correct': 'black' }];
-        cnt = 0;
-        let choices = [];
-        let timer;
 
         next_button.onclick = function () {
             cnt++;
             next_button.style.display = "none";
             display_question();
-        }
+        };
 
         const options = document.getElementById("options-container").children;
 
@@ -485,24 +552,24 @@
             const option = options[i];
             const constI = i;
             option.onclick = () => {
-                choices.push(constI);
+                question_stopTime = performance.now();
+                choices.push([constI, question_stopTime - question_startTime]);
                 clearInterval(timer);
-                if (cnt == questionList.length - 1) {
+                if (cnt === questionList.length - 1) {
                     document.getElementById("options-container").style.display = "none";
-                    alert("Finished:" + choices.toString());
                     mediaRecorder.stop();
                     return;
                 }
                 document.getElementById("options-container").style.display = "none";
                 next_button.style.display = "block";
-            }
+            };
         }
 
         display_question();
 
         function startTimer() {
-            document.getElementById("timer-counter").innerHTML = `00:02`;
-            timeLeft = 2 - 1;
+            document.getElementById("timer-counter").innerHTML = `00:03`;
+            let timeLeft = 3 - 1;
             timer = setInterval(() => {
                 document.getElementById("timer-counter").innerHTML = `00:0${timeLeft}`;
                 timeLeft--;
@@ -514,28 +581,29 @@
         }
 
         function handleTimeout() {
-            cnt++;
-            choices.push(-1);
+            question_stopTime = performance.now();
+            choices.push([-1, question_stopTime - question_startTime]);
             document.getElementById("options-container").style.display = "none";
-            if (cnt == questionList.length) {
-                alert("finished:" + choices);
+            if (cnt === questionList.length - 1) {
                 mediaRecorder.stop();
                 return;
             }
             next_button.style.display = "block";
             alert("Time is up!");
         }
-
+        
         function randomChoice(arr) {
             return arr[Math.floor(Math.random() * arr.length)];
         }
 
         function display_question() {
-            document.getElementById("question-counter").innerHTML = cnt + 1 + "/" + questionList.length;
+            document.getElementById("question-counter").innerHTML = `${cnt + 1}/${questionList.length}`;
             document.getElementById("color-block").style.background = questionList[cnt].correct;
             document.getElementById("options-container").style.display = "flex";
-            for (let i = 1; i < options.length; i++)
-                options[i].innerHTML = questionList[cnt]["options"][i];
+            for (let i = 0; i < options.length; i++) {
+                options[i].innerHTML = questionList[cnt].options[i];
+            }
+            question_startTime = performance.now();
             startTimer();
 
             if (interference) {
@@ -543,9 +611,11 @@
                     currentAudio.pause();
                     currentAudio.currentTime = 0;
                 }
-                var interference_item = questionList[cnt].correct;
-                while (interference_item == questionList[cnt].correct) interference_item = randomChoice(questionList[cnt].options);
-                var audioElement = document.getElementById(interference_item + 'Audio');
+                let interference_item = questionList[cnt].correct;
+                while (interference_item === questionList[cnt].correct) {
+                    interference_item = randomChoice(questionList[cnt].options);
+                }
+                let audioElement = document.getElementById(interference_item + 'Audio');
                 if (audioElement) {
                     audioElement.play();
                     currentAudio = audioElement;
@@ -554,10 +624,40 @@
         }
     }
 
+    function checkCookie() {
+        invitationCode = getCookie('invitationCode');
+        var regex = /^[a-zA-Z0-9]{8}$/;
+        if (regex.test(invitationCode.replace(/\s/g, ""))) {
+            return fetch('/api/check_invitation_code', {
+                method: 'POST',
+                body: JSON.stringify({ invitation_code: invitationCode }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => {
+                    if (response.status != 200) {
+                        window.location.href = "/";
+                    }
+                    return response.json();
+                })
+                .then(result => {
+                    return result;
+                })
+                .catch(error => {
+                    window.location.href = "/";
+                });
+        } else window.location.href = "/";
+    }
+
     window.onload = function () {
-        init_permissions();
-        init_rule_confirm();
-        init_sign();
+        checkCookie().then((result) => {
+            invitationType = result.type;
+            invitationName = result.name;
+            init_permissions();
+            init_rule_confirm();
+            init_sign();
+        });
     }
 </script>
 

@@ -92,34 +92,32 @@
             console.log(invitationCode);
             var regex = /^[a-zA-Z0-9]{8}$/;
             if (regex.test(invitationCode.replace(/\s/g, ""))) {
-                // 这里假设检测的API地址为http://example.com/api/check-invitation
-                fetch("/api/checkInvitationCode", {
-                    method: "POST",
-                    body: JSON.stringify({ invitationCode: invitationCode }),
+
+                const data = { invitation_code: invitationCode };
+
+                // 发送 POST 请求
+                fetch('/api/check_invitation_code', {
+                    method: 'POST',
                     headers: {
-                        "Content-Type": "application/json"
-                    }
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
                 })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.valid) {
-                            if(!data.finished)
-                                window.location.href = "finished.html";
-                            else {
-                                document.cookie = "invitationCode=" + invitationCode + "; max-age=3600";
-                                window.location.href = "quizz.html?invitationcode=" + invitationCode;
-                            }
-                        } else {
+                    .then(response => {
+                        if (response.status != 200) {
                             document.getElementById("error-message").style.display = "block";
+                            return;
                         }
+                        document.cookie = "invitationCode=" + invitationCode + "; max-age=3600";
+                        window.location.href = "./quizz";
                     })
                     .catch(error => {
-                        console.error("Error:", error);
+                        document.getElementById("error-message").style.display = "block";
                     });
-                
             } else {
                 document.getElementById("error-message").style.display = "block";
             }
+
         }
     </script>
 </body>

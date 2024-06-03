@@ -7,17 +7,16 @@ import json
 
 app = Flask(__name__)
 
-# 假设我们有一个字典存储邀请代码及其类型
 invitation_codes = {
-    "Axasdf2a": {"type": 0, "status": 0, "name": "Liu Yuxiang"}
+    "Axasdf2a": {"type": 0, "status": 0, "name": "Elon Musk"}
 }
 ## Type: 0->无干扰 1->有干扰
 ## status: 0->无任何操作 1->已签名 2->已完成
 
 # Configs
 question_num = 10
-admin_id = 'root'
-admin_pass = 'fuck_cs_course'
+admin_id = 'some_username'
+admin_pass = 'some_password'
 admin_token = ''
 
 
@@ -57,7 +56,7 @@ def generate_questions(num_questions=10):
     
     return questions
 
-
+# Private APIs
 @app.route('/api/login', methods=['POST'])
 def loginapi():
     try:
@@ -89,7 +88,7 @@ def setQuestionNumAPI():
 
         if token == admin_token:
             global question_num
-            question_num = int(num)  # 在这里假设 question_num 是全局变量
+            question_num = int(num)
             return "1"
         return "0"
     except Exception as e:

@@ -4,217 +4,258 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel</title>
+    <title>Invitation Code Management</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 50px auto;
-            padding: 20px;
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-
-        h2,
-        h3 {
-            text-align: center;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-        }
-
-        button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #0056b3;
         }
 
         table {
-            width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
+            width: 100%;
         }
 
-        table,
         th,
         td {
             border: 1px solid #ddd;
-        }
-
-        th,
-        td {
-            padding: 10px;
+            padding: 8px;
             text-align: left;
         }
 
         th {
             background-color: #f2f2f2;
         }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .edit-cell {
+            display: none;
+        }
+
+        .edit-cell input {
+            width: 100%;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: space-around;
+        }
+
+        thead tr {
+            border-top-left-radius: 5px;
+            border-top-right-radius: 5px;
+            overflow: hidden;
+        }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <h2>Admin Panel</h2>
-        <h3>Set Question Number</h3>
-        <form id="set-question-num-form">
-            <div class="form-group">
-                <label for="question-num">Number of Questions:</label>
-                <input type="number" id="question-num" name="question-num" required>
-            </div>
-            <button type="submit">Set</button>
-        </form>
-
-        <h3>Invitation Codes</h3>
-        <table id="invitation-codes-table">
-            <thead>
-                <tr>
-                    <th>Invitation Code</th>
-                    <th>Type</th>
-                    <th>Status</th>
-                    <th>Name</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-
-        <h3>New Invitation</h3>
-        <form id="new-invitation-form">
-            <div class="form-group">
-                <label for="type">Type:</label>
-                <input type="text" id="type" name="type" required>
-            </div>
-            <div class="form-group">
-                <label for="status">Status:</label>
-                <input type="text" id="status" name="status" required>
-            </div>
-            <div class="form-group">
-                <label for="name">Name:</label>
-                <input type="text" id="name" name="name" required>
-            </div>
-            <button type="submit">Create</button>
-        </form>
-    </div>
+    <h1>Invitation Code Management</h1>
+    <p>Use ctrl+F to search for name/invitation code...</p>
+    <table id="invitation-codes">
+        <thead>
+            <tr>
+                <th>Invitation Code</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Name</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="invitation-body">
+            <!-- Dynamic content will be inserted here -->
+        </tbody>
+    </table>
+    <button id="new-invitation-button">Add New Invitation</button>
 
     <script>
-        async function fetchInvitationCodes() {
-            const response = await fetch('/api/getList');
-            const codes = await response.json();
-            const tbody = document.querySelector('#invitation-codes-table tbody');
-            tbody.innerHTML = '';
-            for (const code in codes) {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${code}</td>
-                    <td>${codes[code].type}</td>
-                    <td>${codes[code].status}</td>
-                    <td>${codes[code].name}</td>
-                    <td>
-                        <button onclick="deleteInvitation('${code}')">Delete</button>
-                        <button onclick="updateInvitation('${code}')">Update</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            }
-        }
+        document.addEventListener("DOMContentLoaded", function () {
+            const tableBody = document.getElementById("invitation-body");
+            const newInvitationButton = document.getElementById("new-invitation-button");
 
-        document.getElementById('set-question-num-form').addEventListener('submit', async function (e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            const response = await fetch('/api/setQuestionNum', {
-                method: 'POST',
-                body: formData
-            });
-            const result = await response.text();
-            if (result === '1') {
-                alert('Question number set successfully');
-            } else {
-                alert('Failed to set question number');
-            }
-        });
+            const getTypeText = (type) => {
+                return type == 0 ? 'Without Disturbance' : 'With Disturbance';
+            };
 
-        document.getElementById('new-invitation-form').addEventListener('submit', async function (e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            const response = await fetch('/api/newInvitation', {
-                method: 'POST',
-                body: formData
-            });
-            const result = await response.text();
-            if (result !== '-1') {
-                alert('Invitation code created: ' + result);
-                fetchInvitationCodes();
-            } else {
-                alert('Failed to create invitation code');
-            }
-        });
+            const getStatusText = (status) => {
+                    if(status == 0) return 'Incomplete';
+                    if(status == 1) return 'Signed';
+                    if(status == 2) return 'Complete';
+                    return '';
+            };
 
-        async function deleteInvitation(code) {
-            const formData = new FormData();
-            formData.append('invitationCode', code);
-            const response = await fetch('/api/delInvitation', {
-                method: 'POST',
-                body: formData
-            });
-            const result = await response.text();
-            if (result === '1') {
-                alert('Invitation code deleted');
-                fetchInvitationCodes();
-            } else {
-                alert('Failed to delete invitation code');
-            }
-        }
-
-        async function updateInvitation(code) {
-            const type = prompt('Enter new type:', '0');
-            const status = prompt('Enter new status:', '0');
-            const name = prompt('Enter new name:', 'Name');
-            if (type && status && name) {
-                const formData = new FormData();
-                formData.append('invitationCode', code);
-                formData.append('type', type);
-                formData.append('status', status);
-                formData.append('name', name);
-                const response = await fetch('/api/UpdateInvitation', {
-                    method: 'POST',
-                    body: formData
-                });
-                const result = await response.text();
-                if (result === '1') {
-                    alert('Invitation code updated');
-                    fetchInvitationCodes();
-                } else {
-                    alert('Failed to update invitation code');
+            const fetchInvitationCodes = async () => {
+                try {
+                    const response = await fetch('/api/getList');
+                    if (response.ok) {
+                        const data = await response.json();
+                        renderTable(data);
+                    }
+                } catch (error) {
+                    console.error('Error fetching invitation codes:', error);
                 }
-            }
-        }
+            };
 
-        fetchInvitationCodes();
+            const renderTable = (data) => {
+                tableBody.innerHTML = '';
+                for (const [code, info] of Object.entries(data)) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${code}</td>
+                        <td>
+                            <span class="view-cell">${getTypeText(info.type)}</span>
+                            <span class="edit-cell">
+                                <select>
+                                    <option value="0" ${info.type == 0 ? 'selected' : ''}>Without Disturbance</option>
+                                    <option value="1" ${info.type == 1 ? 'selected' : ''}>With Disturbance</option>
+                                </select>
+                            </span>
+                        </td>
+                        <td>
+                            <span class="view-cell">${getStatusText(info.status)}</span>
+                            <span class="edit-cell">
+                                <select>
+                                    <option value="0" ${info.status == 0 ? 'selected' : ''}>Incomplete</option>
+                                    <option value="1" ${info.status == 1 ? 'selected' : ''}>Signed</option>
+                                    <option value="2" ${info.status == 2 ? 'selected' : ''}>Complete</option>
+                                </select>
+                            </span>
+                        </td>
+                        <td>
+                            <span class="view-cell">${info.name}</span>
+                            <span class="edit-cell"><input type="text" value="${info.name}"></span>
+                        </td>
+                        <td class="action-buttons">
+                            <button class="edit-button">Edit</button>
+                            <button class="save-button">Save</button>
+                            <button class="delete-button">Delete</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                }
+                initializeButtons();
+            };
+
+            const initializeButtons = () => {
+                const editButtons = tableBody.querySelectorAll(".edit-button");
+                const saveButtons = tableBody.querySelectorAll(".save-button");
+                const deleteButtons = tableBody.querySelectorAll(".delete-button");
+
+                editButtons.forEach((button) => {
+                    button.addEventListener("click", () => {
+                        const row = button.closest("tr");
+                        row.querySelectorAll(".view-cell").forEach(cell => cell.style.display = "none");
+                        row.querySelectorAll(".edit-cell").forEach(cell => cell.style.display = "inline");
+                    });
+                });
+
+                saveButtons.forEach((button) => {
+                    button.addEventListener("click", async () => {
+                        const row = button.closest("tr");
+                        const invitationCode = row.cells[0].textContent;
+                        const type = parseInt(row.querySelector(".edit-cell select").value);
+                        const status = parseInt(row.querySelector(".edit-cell select").value);
+                        const name = row.querySelector(".edit-cell input").value;
+
+                        try {
+                            const response = await fetch('/api/UpdateInvitation', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded'
+                                },
+                                body: new URLSearchParams({
+                                    invitationCode,
+                                    type,
+                                    status,
+                                    name
+                                })
+                            });
+
+                            if (response.ok) {
+                                location.reload();
+                            } else {
+                                console.error('Error updating invitation code:', response.statusText);
+                            }
+                        } catch (error) {
+                            console.error('Error updating invitation code:', error);
+                        }
+                    });
+                });
+
+                deleteButtons.forEach((button) => {
+                    button.addEventListener("click", async () => {
+                        const row = button.closest("tr");
+                        const invitationCode = row.cells[0].textContent;
+
+                        if (button.getAttribute("data-checked") === "true") {
+                            button.removeAttribute("data-checked");
+                            button.innerHTML = "Delete";
+                            row.querySelectorAll(".view-cell").forEach(cell => cell.style.display = "inline");
+                            row.querySelectorAll(".edit-cell").forEach(cell => cell.style.display = "none");
+                        } else {
+                            if (confirm("Confirm Deletion?")) {
+                                try {
+                                    const response = await fetch('/api/delInvitation', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/x-www-form-urlencoded'
+                                        },
+                                        body: new URLSearchParams({
+                                            invitationCode
+                                        })
+                                    });
+
+                                    if (response.ok) {
+                                        tableBody.removeChild(row);
+                                    } else {
+                                        console.error('Error deleting invitation code:', response.statusText);
+                                    }
+                                } catch (error) {
+                                    console.error('Error deleting invitation code:', error);
+                                }
+                            }
+                        }
+                    });
+                });
+            };
+
+            newInvitationButton.addEventListener("click", async () => {
+                const type = prompt("Enter type (0 for Without Disturbance, 1 for With Disturbance):");
+                const status = prompt("Enter status (0 for Incomplete, 1 for Signed, 2 for Complete):");
+                const name = prompt("Enter name:");
+
+                if (type && status && name) {
+                    try {
+                        const response = await fetch('/api/newInvitation', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            },
+                            body: new URLSearchParams({
+                                type,
+                                status,
+                                name
+                            })
+                        });
+
+                        if (response.ok) {
+                            const newCode = await response.text();
+                            fetchInvitationCodes();
+                        } else {
+                            console.error('Error creating new invitation code:', response.statusText);
+                        }
+                    } catch (error) {
+                        console.error('Error creating new invitation code:', error);
+                    }
+                } else {
+                    alert("All fields are required.");
+                }
+            });
+
+            fetchInvitationCodes();
+        });
     </script>
 </body>
 

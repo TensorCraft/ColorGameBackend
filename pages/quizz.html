@@ -109,10 +109,11 @@
         }
 
         .color-block {
-            width: 200px;
-            height: 200px;
             border-radius: 20px;
-            background-color: #fff;
+            background-color: #CDE8E5;
+            text-align: center;
+            vertical-align: middle;
+            padding: 20px;
         }
 
         .center {
@@ -240,8 +241,8 @@
         <div class="content" id="rules_confirmation" style="display: none;">
             <h2>Before the quizz, you should know:</h2>
             <h3>There will be <b>10 questions</b> in total</h3>
-            <h3>There will be a <b>random color block</b> in each question</h3>
-            <h3>You'll need to <b>choose the correct color</b> of the block</h3>
+            <h3>There will be a <b>random color word</b> in each question</h3>
+            <h3>You'll need to choose the <b>true color of the word</b></h3>
             <h3>You'll have <b>3 seconds</b> for each questions</h3>
             <h3>After the quizz, the <b>recording will be uploaded</b></h3>
             <div class="center"><button id="rules_confirmation_button">I Understand</button></div>
@@ -270,7 +271,7 @@
                 <p class="question-counter" id="question-counter">1/10</p>
             </div>
             <div class="center">
-                <div class="color-block" id="color-block"></div>
+                <h1 class="color-block" id="color-block"></h1>
             </div>
             <div class="triple-division" style="padding: 20px 100px;" id="options-container">
                 <button id="color1">Black</button>
@@ -301,7 +302,7 @@
 <script>
     let screenStream;
     let mediaRecorder;
-    const interference = true;
+    var interference = false;
     var currentAudio = null;
     var cnt = 0;
     var invitationCode;
@@ -309,6 +310,7 @@
     var invitationName;
     var question_startTime;
     var question_stopTime;
+    const colors = ["red", "blue", "green", "yellow", "orange", "purple", "black", "white"]
     var choices = [];
     var questionList;
 
@@ -335,9 +337,7 @@
         let context = canvas.getContext('2d');
 
         const windowToCanvas = (canvas, x, y) => {
-            //获取canvas元素距离窗口的一些属性，MDN上有解释
             let rect = canvas.getBoundingClientRect()
-            //x和y参数分别传入的是鼠标距离窗口的坐标，然后减去canvas距离窗口左边和顶部的距离。
             return {
                 x: x - rect.left * (canvas.width / rect.width),
                 y: (y - rect.top) * (canvas.height / rect.height)
@@ -395,6 +395,7 @@
                 document.getElementById("loader").style.display = "none";
                 document.getElementById("questions").style.display = "block";
                 questionList = data;
+                if(invitationType == 1) interference = true;
                 start_quizz();
             }).catch(error => {
                 alert(error.message);
@@ -591,14 +592,20 @@
             next_button.style.display = "block";
             alert("Time is up!");
         }
-        
+
         function randomChoice(arr) {
             return arr[Math.floor(Math.random() * arr.length)];
         }
 
         function display_question() {
             document.getElementById("question-counter").innerHTML = `${cnt + 1}/${questionList.length}`;
-            document.getElementById("color-block").style.background = questionList[cnt].correct;
+            const code_block = document.getElementById("color-block");
+            code_block.style.color = questionList[cnt].correct;
+            code_block.style.border = `solid 2px ${questionList[cnt].correct}`;
+            random_color = questionList[cnt].correct;
+            while(random_color == questionList[cnt].correct)
+                random_color = randomChoice(questionList[cnt].options)
+            code_block.innerHTML = random_color;
             document.getElementById("options-container").style.display = "flex";
             for (let i = 0; i < options.length; i++) {
                 options[i].innerHTML = questionList[cnt].options[i];

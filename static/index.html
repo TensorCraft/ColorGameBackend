@@ -1,0 +1,127 @@
+<html>
+
+<head>
+    <title>Color Game</title>
+    <style>
+        * {
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body {
+            padding: 0px;
+            margin: 0px;
+            background-color: #7AB2B2;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+
+        .main-box {
+            width: 600px;
+            align-self: center;
+            padding: 20px;
+            border-radius: 15px;
+            background-color: #CDE8E5;
+            margin: 0 auto;
+            box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+        }
+
+        .main-box input {
+            width: 300px;
+            height: 40px;
+            margin-top: 20px;
+            margin-left: calc(50% - 150px);
+            font-size: 20px;
+            background-color: #CDE8E5;
+            border: #fff solid 1px;
+            color: #fff;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .main-box input:focus {
+            outline: none;
+        }
+
+        h2 {
+            color: #4D869C;
+        }
+
+        h3 {
+            color: #4D869C;
+        }
+
+        b {
+            color: #7AB2B2;
+        }
+
+        .content {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        button {
+            margin: auto 0;
+            padding: 10px 20px;
+            font-size: 20px;
+            background-color: #CDE8E5;
+            border: solid 3px #fff;
+            border-radius: 10px;
+            color: #fff;
+        }
+
+        button:hover {
+            border: solid 3px #7AB2B2;
+            color: #7AB2B2;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-box">
+        <h2 style="text-align: center;">Enter your invitation code below to start</h2>
+        <input id="invitation-code" type="text" maxlength="8" oninput="checkInvitation()">
+        <p style="color: red;text-align: center;display:none;" id="error-message">Error: Invalid invitation code</p>
+    </div>
+    <script>
+        function checkInvitation() {
+            var invitationCode = document.getElementById("invitation-code").value;
+            console.log(invitationCode);
+            var regex = /^[a-zA-Z0-9]{8}$/;
+            if (regex.test(invitationCode.replace(/\s/g, ""))) {
+                // 这里假设检测的API地址为http://example.com/api/check-invitation
+                fetch("/api/checkInvitationCode", {
+                    method: "POST",
+                    body: JSON.stringify({ invitationCode: invitationCode }),
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.valid) {
+                            if(!data.finished)
+                                window.location.href = "finished.html";
+                            else {
+                                document.cookie = "invitationCode=" + invitationCode + "; max-age=3600";
+                                window.location.href = "quizz.html?invitationcode=" + invitationCode;
+                            }
+                        } else {
+                            document.getElementById("error-message").style.display = "block";
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error:", error);
+                    });
+                
+            } else {
+                document.getElementById("error-message").style.display = "block";
+            }
+        }
+    </script>
+</body>
+
+</html>

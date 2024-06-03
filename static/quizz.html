@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Color Game</title>
+    <style>
+        * {
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body {
+            padding: 0px;
+            margin: 0px;
+            background-color: #7AB2B2;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+
+        .main-box {
+            width: 600px;
+            align-self: center;
+            padding: 20px;
+            border-radius: 15px;
+            background-color: #CDE8E5;
+            margin: 0 auto;
+            box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+        }
+
+        .main-box input {
+            width: 300px;
+            height: 40px;
+            margin-top: 20px;
+            margin-left: calc(50% - 150px);
+            font-size: 20px;
+            background-color: #CDE8E5;
+            border: #fff solid 1px;
+            color: #fff;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .main-box input:focus {
+            outline: none;
+        }
+
+        h2 {
+            color: #4D869C;
+        }
+
+        h3 {
+            color: #4D869C;
+        }
+
+        b {
+            color: #7AB2B2;
+        }
+
+        .content {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        button {
+            margin: auto 0;
+            padding: 10px 20px;
+            font-size: 20px;
+            background-color: #CDE8E5;
+            border: solid 3px #fff;
+            border-radius: 10px;
+            color: #fff;
+        }
+
+        button:hover {
+            border: solid 3px #7AB2B2;
+            color: #7AB2B2;
+        }
+
+        li {
+            list-style: none;
+        }
+
+        li h2 {
+            display: inline-block;
+            color: #4D869C;
+            vertical-align: middle;
+        }
+
+        li img {
+            width: 40px;
+            height: 40px;
+            vertical-align: middle;
+        }
+
+        .timer-counter {
+            justify-content: flex-start;
+            display: flex;
+            color: #4D869C;
+        }
+
+        .question-counter {
+            flex: 1;
+            justify-content: flex-end;
+            display: flex;
+            color: #4D869C;
+        }
+
+        .color-block {
+            width: 200px;
+            height: 200px;
+            border-radius: 20px;
+            background-color: #fff;
+        }
+
+        .center {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        .flex-container {
+            width: 100%;
+            display: flex;
+        }
+
+        .triple-division {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #signature {
+            width: 300px;
+            height: 100px;
+            background-color: #fff;
+            margin-bottom: 30px;
+        }
+
+        #camera_pv_text {
+            color: #4D869C;
+            margin-top: 30px;
+        }
+
+        #camera_preview {
+            width: 200px;
+            height: 120px;
+            background-color: black;
+            border-radius: 20px;
+        }
+
+        audio {
+            display: none;
+        }
+
+        .loading {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: inline-block;
+            position: relative;
+            border: 3px solid;
+            border-color: #ddd #ddd transparent;
+            animation: rotation 1s linear infinite;
+        }
+
+        .loading:after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            margin: auto;
+            border: 3px solid;
+            border-color: transparent #7AB2B2 #7AB2B2;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            -webkit-animation: rotationBack 0.5s linear infinite;
+            animation: rotationBack 0.5s linear infinite;
+            transform-origin: center center;
+        }
+
+        @keyframes rotation {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes rotationBack {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(-360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <audio id="redAudio" src="audio/red.mp3"></audio>
+    <audio id="blueAudio" src="audio/blue.mp3"></audio>
+    <audio id="greenAudio" src="audio/green.mp3"></audio>
+    <audio id="yellowAudio" src="audio/yellow.mp3"></audio>
+    <audio id="orangeAudio" src="audio/orange.mp3"></audio>
+    <audio id="purpleAudio" src="audio/purple.mp3"></audio>
+    <audio id="blackAudio" src="audio/black.mp3"></audio>
+    <audio id="whiteAudio" src="audio/white.mp3"></audio>
+    <div class="main-box">
+        <div class="content" id="init_access" style="display: none;">
+            <h2>To start the quizz, we need:</h2>
+            <li>
+                <img src="src/camera.svg" />
+                <h2>Access to your camera</h2>
+            </li>
+            <li>
+                <img src="src/audio.svg" />
+                <h2>Access to your microphone</h2>
+            </li>
+            <li>
+                <img src="src/window.svg" />
+                <h2>Access to recording current window</h2>
+            </li>
+            <li id="audio_permission_hint">
+                <img src="src/audio.svg" />
+                <h2>You to enable the audio</h2>
+            </li>
+            <div class="center"><button id="init_access_button">Accept</button></div>
+        </div>
+        <div class="content" id="rules_confirmation" style="display: none;">
+            <h2>Before the quizz, you should know:</h2>
+            <h3>There will be <b>10 questions</b> in total</h3>
+            <h3>There will be a <b>random color block</b> in each question</h3>
+            <h3>You'll need to <b>choose the correct color</b> of the block</h3>
+            <h3>You'll have <b>3 seconds</b> for each questions</h3>
+            <h3>After the quizz, the <b>recording will be uploaded</b></h3>
+            <div class="center"><button id="rules_confirmation_button">I Understand</button></div>
+        </div>
+        <div class="content" id="sign_name" style="display: none;">
+            <h2>Hi, <b>Yuxiang Liu</b></h2>
+            <h3>Before entering quizz, please <b>sign</b> your name below</h3>
+            <p style="margin-bottom: 0;padding-bottom: 0;">
+                </pstyle>Once you finished signing, your invitation code will expire</p>
+            <p style="margin-top: 0;padding-top: 0;">which means you cannot refresh the window</p>
+            <div class="center">
+                <canvas id="signature"></canvas>
+            </div>
+            <div class="center">
+                <button id="done_sign_button">Done</button>
+            </div>
+        </div>
+        <div class="content" id="questions" style="display: none;">
+            <div class="flex-container">
+                <p class="timer-counter" id="timer-counter">00:03</p>
+                <p class="question-counter" id="question-counter">1/10</p>
+            </div>
+            <div class="center">
+                <div class="color-block" id="color-block"></div>
+            </div>
+            <div class="triple-division" style="padding: 20px 100px;" id="options-container">
+                <button id="color1">Black</button>
+                <button id="color2">White</button>
+                <button id="color3">Green</button>
+                <button id="color4">Green</button>
+            </div>
+            <div class="center">
+                <button id="next_button" style="margin-top: 20px;">Next Question</button>
+            </div>
+            <div class="center">
+                <p id="camera_pv_text">Camera:</p>
+            </div>
+            <div class="center">
+                <video id="camera_preview" muted></video>
+            </div>
+        </div>
+        <div class="content" id="uploading_section" style="display: none;">
+            <h2 style="text-align: center;">Uploading...</h2>
+            <h3 style="text-align: center;">Don't close the tab</h3>
+            <div class="center">
+                <div class="loading"></div>
+            </div>
+        </div>
+    </div>
+</body>
+
+<script>
+    let screenStream;
+    let mediaRecorder;
+    const interference = true;
+    var currentAudio = null;
+    let cnt;
+    function init_sign() {
+        const canvas = document.getElementById("signature");
+        let context = canvas.getContext('2d');
+
+        const windowToCanvas = (canvas, x, y) => {
+            //获取canvas元素距离窗口的一些属性，MDN上有解释
+            let rect = canvas.getBoundingClientRect()
+            //x和y参数分别传入的是鼠标距离窗口的坐标，然后减去canvas距离窗口左边和顶部的距离。
+            return {
+                x: x - rect.left * (canvas.width / rect.width),
+                y: (y - rect.top) * (canvas.height / rect.height)
+            }
+        }
+
+        canvas.onmousedown = function (e) {
+            isAllowDrawLine = true
+            let ele = windowToCanvas(canvas, e.clientX, e.clientY)
+            let { x, y } = ele
+            context.moveTo(x, y)
+            canvas.onmousemove = (e) => {
+                if (isAllowDrawLine) {
+                    let ele = windowToCanvas(canvas, e.clientX, e.clientY)
+                    let { x, y } = ele
+                    context.lineTo(x, y)
+                    context.stroke()
+                }
+            }
+        }
+        canvas.onmouseup = function () {
+            isAllowDrawLine = false
+        }
+
+        const saveButton = document.getElementById("done_sign_button");
+
+        saveButton.addEventListener("click", saveCanvas);
+
+        function saveCanvas() {
+            const image = canvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            link.download = "signature.png";
+            link.href = image;
+            link.click();
+
+            document.getElementById("sign_name").style.display = "none";
+            document.getElementById("questions").style.display = "block";
+            start_quizz();
+        }
+    }
+
+    function requestPermissions() {
+        let cameraStream;
+        document.getElementById("init_access_button").onclick = function () { };
+        navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true
+        })
+            .then(function (stream) {
+                // 用户授权后的处理逻辑，比如显示摄像头预览等
+
+                const videoElement = document.getElementById("camera_preview");
+                videoElement.srcObject = stream;
+                videoElement.play();
+                const audioTracks = stream.getAudioTracks();
+                audioTracks.forEach(track => {
+                    track.enabled = true;
+                });
+
+                cameraStream = stream
+
+                return navigator.mediaDevices.getDisplayMedia({
+                    video: {
+                        cursor: "always"
+                    },
+                    audio: true
+                });
+            }).then(function (displayStream) {
+                const combinedStream = new MediaStream();
+                let recording = false;
+
+                // 将显示流的视频轨道添加到合并流中
+                displayStream.getVideoTracks().forEach(track => combinedStream.addTrack(track));
+
+                // 将显示流和摄像头流的音频轨道添加到合并流中
+                displayStream.getAudioTracks().forEach(track => combinedStream.addTrack(track));
+                cameraStream.getAudioTracks().forEach(track => combinedStream.addTrack(track));
+
+
+                // 隐藏权限申请界面，显示下一个界面
+                screenStream = displayStream;
+                const initAccessDiv = document.getElementById("init_access");
+                const rulesConfirmationDiv = document.getElementById("rules_confirmation");
+                initAccessDiv.style.display = "none";
+                rulesConfirmationDiv.style.display = "block";
+
+                mediaRecorder = new MediaRecorder(combinedStream);
+                let chunks = [];
+
+                mediaRecorder.ondataavailable = function (event) {
+                    if (event.data.size > 0) {
+                        chunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = function () {
+                    let blob = new Blob(chunks, { type: 'video/webm' });
+                    let url = URL.createObjectURL(blob);
+                    let a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'recording.webm';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    recording = false;//window.location.href = "finished.html";
+                    cameraStream.getTracks().forEach(function (track) {
+                        track.stop();
+                    });
+                    document.getElementById("questions").style.display = "none";
+                    document.getElementById("uploading_section").style.display = "block";
+                    setTimeout(() => { window.location.href = "finished.html" }, 3000);
+                };
+
+                mediaRecorder.onerror = function (event) {
+                    alert("Screen Recording Error, Please contact Admin");
+                    location.reload();
+                    //mediaRecorder.stop();
+                };
+
+                // 监听 displayStream 的 inactive 事件
+                displayStream.getVideoTracks()[0].addEventListener('ended', function () {
+                    if (!recording) return;
+                    alert("Please don't stop screen sharing!");
+                    mediaRecorder.stop();
+                    location.reload();
+                });
+
+                // 开始录制
+                recording = true;
+                mediaRecorder.start();
+            })
+            .catch(function (error) {
+                alert("Please allow the permissions!")
+                location.reload();
+                console.error("Error accessing media devices: ", error);
+            });
+    }
+
+    function showSignBox() {
+        const rulesConfirmationDiv = document.getElementById("rules_confirmation");
+        const signNameDiv = document.getElementById("sign_name");
+        rulesConfirmationDiv.style.display = "none";
+        signNameDiv.style.display = "block";
+    }
+
+    function init_permissions() {
+        document.getElementById("init_access").style.display = "block";
+        const initAccessButton = document.getElementById("init_access_button");
+
+        initAccessButton.onclick = requestPermissions;
+    }
+
+    function init_rule_confirm() {
+        const rulesConfirmationButton = document.getElementById("rules_confirmation_button");
+        rulesConfirmationButton.addEventListener("click", showSignBox);
+    }
+
+    function start_quizz() {
+        const next_button = document.getElementById("next_button");
+        next_button.style.display = "none";
+        const questionList = [{ 'options': ['green', 'white', 'black', 'orange'], 'correct': 'green' }, { 'options': ['black', 'white', 'red', 'orange'], 'correct': 'black' }, { 'options': ['red', 'blue', 'green', 'black'], 'correct': 'green' }, { 'options': ['red', 'orange', 'purple', 'green'], 'correct': 'green' }, { 'options': ['black', 'white', 'blue', 'green'], 'correct': 'black' }, { 'options': ['red', 'blue', 'green', 'white'], 'correct': 'green' }, { 'options': ['yellow', 'red', 'orange', 'purple'], 'correct': 'yellow' }, { 'options': ['white', 'orange', 'purple', 'blue'], 'correct': 'white' }, { 'options': ['purple', 'black', 'green', 'white'], 'correct': 'green' }, { 'options': ['red', 'orange', 'black', 'yellow'], 'correct': 'black' }];
+        cnt = 0;
+        let choices = [];
+        let timer;
+
+        next_button.onclick = function () {
+            cnt++;
+            next_button.style.display = "none";
+            display_question();
+        }
+
+        const options = document.getElementById("options-container").children;
+
+        for (let i = 0; i < options.length; i++) {
+            const option = options[i];
+            const constI = i;
+            option.onclick = () => {
+                choices.push(constI);
+                clearInterval(timer);
+                if (cnt == questionList.length - 1) {
+                    document.getElementById("options-container").style.display = "none";
+                    alert("Finished:" + choices.toString());
+                    mediaRecorder.stop();
+                    return;
+                }
+                document.getElementById("options-container").style.display = "none";
+                next_button.style.display = "block";
+            }
+        }
+
+        display_question();
+
+        function startTimer() {
+            document.getElementById("timer-counter").innerHTML = `00:02`;
+            timeLeft = 2 - 1;
+            timer = setInterval(() => {
+                document.getElementById("timer-counter").innerHTML = `00:0${timeLeft}`;
+                timeLeft--;
+                if (timeLeft < 0) {
+                    clearInterval(timer);
+                    handleTimeout();
+                }
+            }, 1000);
+        }
+
+        function handleTimeout() {
+            cnt++;
+            choices.push(-1);
+            document.getElementById("options-container").style.display = "none";
+            if (cnt == questionList.length) {
+                alert("finished:" + choices);
+                mediaRecorder.stop();
+                return;
+            }
+            next_button.style.display = "block";
+            alert("Time is up!");
+        }
+
+        function randomChoice(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        function display_question() {
+            document.getElementById("question-counter").innerHTML = cnt + 1 + "/" + questionList.length;
+            document.getElementById("color-block").style.background = questionList[cnt].correct;
+            document.getElementById("options-container").style.display = "flex";
+            for (let i = 1; i < options.length; i++)
+                options[i].innerHTML = questionList[cnt]["options"][i];
+            startTimer();
+
+            if (interference) {
+                if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio.currentTime = 0;
+                }
+                var interference_item = questionList[cnt].correct;
+                while (interference_item == questionList[cnt].correct) interference_item = randomChoice(questionList[cnt].options);
+                var audioElement = document.getElementById(interference_item + 'Audio');
+                if (audioElement) {
+                    audioElement.play();
+                    currentAudio = audioElement;
+                }
+            }
+        }
+    }
+
+    window.onload = function () {
+        init_permissions();
+        init_rule_confirm();
+        init_sign();
+    }
+</script>
+
+</html>
